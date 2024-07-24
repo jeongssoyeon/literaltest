@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.literal.admin.adminMapper">
+
+	<!-- 회원 목록 조회 쿼리 -->
+    <select id="getAllMembers" resultType="kr.co.literal.member.MemberDTO">
+        SELECT * FROM member
+    </select>
+    
+    
+	<!-- 상품 -->
+	<!-- 상품 목록 조회 -->
+ 	<select id="list" resultType="java.util.Map">
+		SELECT  genre_code, book_code, book_number, book_title, author, grade_code, sale_price, email, availability, branch_code, registration_date
+        FROM product
+        ORDER BY registration_date DESC
+	</select>
+
+	<!-- 상품 상세 -->
+	<select id="detail" resultType="java.util.Map" parameterType="String">
+        SELECT genre_code, book_code, book_number, book_title, author, press, publishing_date, intro_book, img, img_size, grade_code, original_price, sale_price, email, availability, branch_code
+        FROM product
+        WHERE book_number = #{book_number}
+    </select>
+	
+	<!-- 이미지 -->
+    <select id="img" resultType="String" parameterType="String">
+        SELECT img
+        FROM product
+        WHERE book_number=#{book_number}
+    </select>
+    
+     <!-- 장르 코드로 새로운 책 코드 생성 -->
+    <select id="genreBookCode" resultType="int" parameterType="string">
+	    SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(book_code, '-', -1) AS UNSIGNED)), 0) + 1
+	    FROM product
+	    WHERE genre_code = #{genre_code}
+    </select>
+
+    <!-- 주어진 장르 코드와 책 코드로 다음 책 번호 가져오기 -->
+    <select id="getNextBookNumber" parameterType="map" resultType="int">
+        SELECT COALESCE(MAX(CAST(RIGHT(book_number, 3) AS UNSIGNED)), 0) + 1
+        FROM product
+        WHERE genre_code = #{genre_code} AND book_code = #{book_code}
+    </select>
+
+    <!-- 주어진 책 코드가 존재하는지 확인 -->
+    <select id="bookCodeExists" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM product WHERE book_code = #{book_code}
+    </select>
+
+    <!-- 주어진 책 번호가 존재하는지 확인 -->
+    <select id="bookNumberExists" parameterType="string" resultType="int">
+	    SELECT COUNT(*) FROM product 
+	    WHERE genre_code = #{genreCode} AND book_number = #{bookNumber}
+    </select>
+
+    <!-- 주어진 책 제목이 존재하는지 확인 -->
+    <select id="bookTitleExists" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM product 
+        WHERE genre_code = #{genre_code} AND book_title = #{book_title}
+    </select>
+	    
+    <!-- 주어진 책 제목으로 책 코드 가져오기 -->
+    <select id="getBookCodeByTitle" parameterType="map" resultType="string">
+        SELECT book_code FROM product 
+        WHERE genre_code = #{genre_code} AND book_title = #{book_title}
+        LIMIT 1
+    </select>
+
+	<!-- 상품 수정 -->
+	<update id="update" parameterType="java.util.Map">
+        UPDATE product
+        SET genre_code = #{genre_code},
+            book_code = #{book_code},
+        	book_number = #{book_number},
+        	book_title=#{book_title},
+        	author=#{author},
+        	grade_code=#{grade_code},
+        	original_price=#{original_price},
+            sale_price=#{sale_price},
+            press=#{press},
+            publishing_date=#{publishing_date},
+            intro_book=#{intro_book},
+            img=#{img},
+            img_size=#{img_size},
+            availability = #{availability},
+            branch_code = #{branch_code}           
+        WHERE book_number=#{original_book_number}
+    </update>
+    
+    <!-- 지점, 판매여부 수정 -->
+	<update id="quickupdate" parameterType="java.util.Map">
+        UPDATE product
+        SET availability = #{availability}, branch_code = #{branch_code}           
+        WHERE book_number=#{book_number}
+    </update>
+   
+	<!-- 상품 조회 -->
+	<select id="search" resultType="java.util.Map" parameterType="String">
+		SELECT book_number, book_title, original_price, sale_price, img, img_size
+        FROM product
+        WHERE book_title LIKE #{keyword}
+        ORDER BY book_title
+	</select>
+	
+	
+	
+	<!-- 1:1문의 -->
+	<select id="ad_inquiry_list" parameterType="map" resultType="kr.co.literal.mypage.InquiryDTO">
+        SELECT inquiry_code,email,inquiry_date
+        FROM inquiry
+        ORDER BY inquiry_date DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+    
+    <select id="inquiry_list_count" resultType="int">
+        SELECT COUNT(*) FROM inquiry
+    </select>
+    
+    <update id="increaseViewCount" parameterType="int">
+    	UPDATE notice SET view_count = view_count + 1 
+    	WHERE notice_code = #{notice_code}
+	</update>
+    
+    <select id="selectNoticeById" parameterType="int" resultType="kr.co.literal.notice.NoticeDTO">
+    	SELECT notice_code,notice_title, notice_content,view_count 
+    	FROM notice 
+    	WHERE notice_code = #{notice_code}
+	</select>
+	
+    <select id="ad_inquiry_detail" parameterType="int" resultType="kr.co.literal.mypage.InquiryDTO">
+		SELECT inquiry_code,email,inquiry_content,inquiry_date,inquiry_answer
+		FROM inquiry
+		WHERE inquiry_code= #{inquiry_code}
+	</select>
+	
+	<update id="ad_inquiry_update" parameterType="kr.co.literal.mypage.InquiryDTO">
+		UPDATE inquiry
+		SET inquiry_answer=#{inquiry_answer}
+		WHERE inquiry_code = #{inquiry_code}
+	</update>
+	
+	
+	<!-- 리뷰(설문조사) -->
+	<!-- 상품 전체 리스트 -->
+ 	<select id="relist" resultType="java.util.Map">
+		SELECT  review_id, email, book_number, rating, delivery_condition, book_condition, price_appropriateness, seller_question, treview, review_date
+        FROM review
+        ORDER BY review_date DESC
+	</select>
+	
+	<!-- daily_sales(지점매출관리) 애경 수정 시작-->
+    <!-- 당일매출등록 -->
+    <!-- reservation 테이블에서 branch_code를 직접 참조하는 대신, seat_code의 첫 3글자를 사용하여 branch_code를 추출 -->
+	 
+	 <!-- dtotal_product 계산 -->
+	<select id="calculateDtotalProduct" resultType="int" parameterType="map">
+	    SELECT COALESCE(SUM(c.sale_price), 0)
+	    FROM payment p
+	    JOIN cart c ON p.cart_code = c.cart_code
+	    JOIN product prod ON c.book_number = prod.book_number
+	    WHERE prod.branch_code = #{branch_code} 
+	    AND DATE(p.payment_date) = DATE(#{sales_date})
+	</select>
+
+	<!-- dtotal_room 계산 -->
+	<select id="calculateDtotalRoom" resultType="int" parameterType="map">
+	    SELECT COALESCE(SUM(r.reservation_total), 0)
+	    FROM reservation r
+	    WHERE SUBSTRING(r.seat_code, 1, 3) = #{branch_code} 
+	    AND DATE(r.reservation_date) = DATE(#{sales_date})
+	</select>
+	
+	<!-- 삽입 또는 업데이트 -->
+	<insert id="insertOrUpdateDailySales" parameterType="kr.co.literal.admin.DailySalesDTO">
+	    INSERT INTO daily_sales (branch_code, dtotal_product, dtotal_room, sales_date)
+	    VALUES (#{branch_code}, #{dtotal_product}, #{dtotal_room}, #{sales_date})
+	    ON DUPLICATE KEY UPDATE
+	    dtotal_product = dtotal_product + VALUES(dtotal_product),
+    	dtotal_room = dtotal_room + VALUES(dtotal_room)
+	</insert>
+
+    <!-- 지점별 일일 매출 조회 -->
+	<select id="selectDailySales" parameterType="map" resultType="kr.co.literal.admin.DailySalesDTO">
+	    SELECT branch_code, dtotal_product, dtotal_room, sales_date
+	    FROM daily_sales
+	    WHERE branch_code = #{branch_code} AND DATE(sales_date) = DATE(#{sales_date})
+	</select>
+	
+	<!-- 지점별 기간 매출 조회 -->
+	<select id="selectDailySalesByPeriod" parameterType="map" resultType="kr.co.literal.admin.DailySalesDTO">
+	    SELECT branch_code, dtotal_product, dtotal_room, sales_date
+	    FROM daily_sales
+	    WHERE branch_code = #{branch_code} 
+	    AND sales_date BETWEEN #{startDate} AND #{endDate}
+	    ORDER BY sales_date
+	</select>
+	
+	<!-- 삭제 -->
+	<delete id="deleteDailySales" parameterType="map">
+	    DELETE FROM daily_sales
+	    WHERE branch_code = #{branch_code} AND DATE(sales_date) = DATE(#{sales_date})
+	</delete>
+	<!-- daily_sales(지점매출관리) 애경 수정 끝-->
+	
+</mapper>
